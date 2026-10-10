@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Finances Cabinets</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  --bg:#FAFAF8; --surface:#FFFFFF; --ink:#1B2420; --ink-soft:#5B655F;
+  --brand:#14524A; --brand-ink:#FFFFFF; --pos:#1E8A5F; --neg:#C1432A;
+  --line:#E2DED3; --warn:#B4790E; --warn-bg:#FBF0DC; --neg-bg:#FBE7E1;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10201B; --surface:#16261F; --ink:#ECEFEA; --ink-soft:#9AA69C;
+    --brand:#3E9683; --brand-ink:#08150F; --pos:#4CC38A; --neg:#E2735A;
+    --line:#2A3B32; --warn:#E3A93B; --warn-bg:#2E2510; --neg-bg:#331E1A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10201B; --surface:#16261F; --ink:#ECEFEA; --ink-soft:#9AA69C;
+  --brand:#3E9683; --brand-ink:#08150F; --pos:#4CC38A; --neg:#E2735A;
+  --line:#2A3B32; --warn:#E3A93B; --warn-bg:#2E2510; --neg-bg:#331E1A;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;}
+h1,h2,h3{margin:0 0 4px 0; font-weight:700}
+h2{font-size:17px} h3{font-size:14px; color:var(--ink-soft); font-weight:600}
+p{margin:0} button{font-family:inherit}
+#top{position:sticky; top:0; z-index:10; background:var(--brand); color:var(--brand-ink);
+  padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 14px;}
+#top .row{display:flex; justify-content:space-between; align-items:baseline}
+#top .label{font-size:12px; opacity:.85}
+#main{max-width:520px; margin:0 auto; padding:16px 16px 96px; min-height:60vh}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px;}
+.balance-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px}
+.balance-grid .card{margin-bottom:0; text-align:center}
+.balance-grid .amount{font-size:20px; font-weight:700; margin-top:2px}
+.net-amount{font-size:26px; font-weight:700; margin:4px 0}
+.section-title{margin:18px 0 8px; font-size:13px; color:var(--ink-soft); font-weight:600}
+.cabinet-row{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line)}
+.cabinet-row:last-child{border-bottom:none}
+.cabinet-row .name{font-weight:600; font-size:14px}
+.cabinet-row .figures{text-align:right; font-size:13px; color:var(--ink-soft)}
+.trend{font-weight:700; margin-left:4px}
+.trend.up{color:var(--pos)} .trend.down{color:var(--neg)} .trend.flat{color:var(--ink-soft)}
+label{display:block; font-size:13px; color:var(--ink-soft); margin:12px 0 5px}
+label:first-of-type{margin-top:0}
+input,select,textarea{width:100%; padding:12px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font-size:16px;}
+.segmented{display:flex; gap:8px; flex-wrap:wrap}
+.segmented button{flex:1; min-width:90px; padding:12px 8px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;}
+.segmented button.active{background:var(--brand); color:var(--brand-ink); border-color:var(--brand)}
+.btn{display:block; width:100%; padding:14px; border-radius:8px; border:none; background:var(--brand); color:var(--brand-ink); font-size:15px; font-weight:700; cursor:pointer; margin-top:16px;}
+.btn.secondary{background:var(--bg); color:var(--ink); border:1px solid var(--line)}
+.list-row{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--line);}
+.list-row:last-child{border-bottom:none}
+.list-row .meta{font-size:12px; color:var(--ink-soft)}
+.list-row .desc{font-size:14px; font-weight:600}
+.amount-pos{color:var(--pos); font-weight:700; white-space:nowrap}
+.amount-neg{color:var(--neg); font-weight:700; white-space:nowrap}
+.pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; background:var(--line)}
+.pill.warn{background:var(--warn-bg); color:var(--warn)}
+.pill.neg{background:var(--neg-bg); color:var(--neg)}
+.pill.pos{background:var(--neg-bg); background:color-mix(in srgb, var(--pos) 18%, transparent); color:var(--pos)}
+.empty{color:var(--ink-soft); font-size:14px; padding:18px 4px; text-align:center}
+.smallbtn{padding:7px 12px; border-radius:7px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:12px; font-weight:700; cursor:pointer}
+.subtabs{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap}
+.subtabs button{padding:8px 12px; border-radius:999px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:13px; font-weight:600; cursor:pointer}
+.subtabs button.active{background:var(--brand); color:var(--brand-ink); border-color:var(--brand)}
+.status{font-size:13px; color:var(--pos); margin-top:8px; min-height:16px}
+.status.err{color:var(--neg)}
+#nav{position:fixed; left:0; right:0; bottom:0; z-index:10; background:var(--surface); border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom,0px); display:flex;}
+#nav button{flex:1; background:none; border:none; padding:10px 2px 8px; cursor:pointer; color:var(--ink-soft); font-size:11px; display:flex; flex-direction:column; align-items:center; gap:3px;}
+#nav button .ic{font-size:20px}
+#nav button.active{color:var(--brand); font-weight:700}
+.filters{display:flex; gap:8px; margin-bottom:12px}
+.filters select{flex:1}
+#lock{position:fixed; inset:0; z-index:50; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:24px; padding-top:calc(24px + env(safe-area-inset-top,0px));}
+#lock .box{width:100%; max-width:340px}
+#lock .icon{font-size:36px; text-align:center; margin-bottom:6px}
+#lock h2{text-align:center; margin-bottom:4px}
+#lock p.hint{text-align:center; color:var(--ink-soft); font-size:13px; margin-bottom:18px}
+.lockbtn{background:none; border:none; color:var(--brand-ink); font-size:20px; cursor:pointer; padding:4px}
+</style>
+</head>
+<body>
+<div id="top"><div class="row"><h1 style="font-size:16px">Finances Cabinets</h1><span class="label" id="topDate"></span><button class="lockbtn" id="btnLockMenu" title="Code d'accès">🔒</button></div></div>
+<div id="main"></div>
+<div id="nav"></div>
+<div id="lock"></div>
+<script>
+const STORE_KEY = "cab_finances_v2";
+const CABINETS = ["Believe","Bien-être","Bon Pasteur"];
+const CAB2 = ["Believe","Bien-être"];
+const DEP_CATEGORIES = ["Médicaments/réactifs","Électricité/eau","Communication","Autre"];
+const PERSO_CATEGORIES = ["Alimentation","Logement","Scolarité","Santé","Transport","Aide famille","Tontine","Autre"];
+
+function defaultState(){ return { recettes:[], depenses:[], personnel:[], paiementsPersonnel:[], loyers:[], paiementsLoyer:[], salairesPerso:[], depensesPerso:[], dettes:[], virements:[], creances:[] }; }
+function loadState(){
+  try{ const raw = localStorage.getItem(STORE_KEY); if(!raw) return defaultState();
+    return Object.assign(defaultState(), JSON.parse(raw)); }
+  catch(e){ return defaultState(); }
+}
+let state = loadState();
+let saveOk = true;
+function saveState(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); saveOk=true; } catch(e){ saveOk=false; } }
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function monthKey(d){ return (d||"").slice(0,7); }
+function thisMonthKey(){ return todayStr().slice(0,7); }
+function prevMonthKey(mk){ const [y,m]=mk.split("-").map(Number); const d=new Date(y,m-2,1); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+function monthLabel(mk){ const [y,m]=mk.split("-").map(Number); const d=new Date(y,m-1,1); return d.toLocaleDateString("fr-FR",{month:"long",year:"numeric"}); }
+function fmt(n){ n=Number(n)||0; return n.toLocaleString("fr-FR")+" FCFA"; }
+function daysUntil(dateStr){ if(!dateStr) return null; const d=new Date(dateStr+"T00:00:00"); const t=new Date(); t.setHours(0,0,0,0); return Math.round((d-t)/86400000); }
+
+const EMAIL_KEY="cab_notif_email", LASTEXPORT_KEY="cab_last_export_date";
+function lastExportDaysAgo(){
+  const d = localStorage.getItem(LASTEXPORT_KEY);
+  if(!d) return null;
+  return Math.round((new Date(todayStr()) - new Date(d)) / 86400000);
+}
+function downloadCsvFile(csv, filename){
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+function buildCsv(mk, cabFilter){
+  const rows=[];
+  state.recettes.forEach(r=>rows.push([r.date,"Recette",r.cabinet,(r.consultations||0)+" consult.",r.encaisse]));
+  state.depenses.forEach(d=>rows.push([d.date,"Dépense",d.cabinet,d.categorie,-d.montant]));
+  state.paiementsPersonnel.forEach(p=>{ const emp=state.personnel.find(x=>x.id===p.personnelId); rows.push([p.date,"Salaire employé",emp?emp.cabinet:"",emp?emp.nom:"",-p.montant]); });
+  state.paiementsLoyer.forEach(l=>rows.push([l.date,"Loyer",l.cabinet,"Loyer",-l.montant]));
+  state.salairesPerso.forEach(s=>rows.push([s.date,"Mon salaire","Personnel","Versement",-s.montant]));
+  state.virements.filter(v=>(v.type||"depot")==="depot").forEach(v=>rows.push([v.date,"Virement épargne",v.objectif,v.objectif,-v.montant]));
+  state.creances.filter(c=>c.payee).forEach(c=>rows.push([c.datePayee,"Créance encaissée",c.cabinet,c.patient||"",c.montant]));
+  let filtered = rows.filter(r=>monthKey(r[0])===mk);
+  if(cabFilter&&cabFilter!=="Tous") filtered = filtered.filter(r=>r[2]===cabFilter);
+  filtered.sort((a,b)=>a[0].localeCompare(b[0]));
+  let csv="\uFEFFDate;Type;Cabinet;Description;Montant (FCFA)\n";
+  filtered.forEach(r=>{ csv+=r.map(v=>String(v).replace(/;/g,",")).join(";")+"\n"; });
+  return csv;
+}
+
+let activeTab="accueil", plusTab="espace", chargesTab="personnel";
+let panierCabinet="Believe", panierDate=todayStr(), panierRowCount=3;
+let editTarget=null; // {type, id}
+let histFilterMonth=thisMonthKey(), histFilterCabinet="Tous";
+let recetteCabinet="Believe", depenseCabinet="Believe";
+let personnelCabinet="Believe", loyerCabinet="Believe";
+let situationMois=thisMonthKey();
+let lastSalaire="";
+
+// ---------- calculs ----------
+function sumRecettes(cab,mk){ return state.recettes.filter(r=>r.cabinet===cab&&monthKey(r.date)===mk).reduce((s,r)=>s+Number(r.encaisse||0),0); }
+function sumDepensesCabinet(cab,mk){
+  let s = state.depenses.filter(d=>d.cabinet===cab&&monthKey(d.date)===mk).reduce((a,d)=>a+Number(d.montant||0),0);
+  if(CAB2.includes(cab)){
+    const ids = state.personnel.filter(p=>p.cabinet===cab).map(p=>p.id);
+    s += state.paiementsPersonnel.filter(p=>ids.includes(p.personnelId)&&p.mois===mk).reduce((a,p)=>a+Number(p.montant||0),0);
+    s += state.paiementsLoyer.filter(l=>l.cabinet===cab&&l.mois===mk).reduce((a,l)=>a+Number(l.montant||0),0);
+  }
+  return s;
+}
+function soldeCabinets(){
+  const rec = state.recettes.reduce((s,r)=>s+Number(r.encaisse||0),0);
+  const dep = state.depenses.reduce((s,d)=>s+Number(d.montant||0),0);
+  const per = state.paiementsPersonnel.reduce((s,p)=>s+Number(p.montant||0),0);
+  const loy = state.paiementsLoyer.reduce((s,l)=>s+Number(l.montant||0),0);
+  const sal = state.salairesPerso.reduce((s,x)=>s+Number(x.montant||0),0);
+  const vir = state.virements.filter(v=>(v.type||"depot")==="depot").reduce((s,v)=>s+Number(v.montant||0),0);
+  const creancesEnc = state.creances.filter(c=>c.payee).reduce((s,c)=>s+Number(c.montant||0),0);
+  return rec - dep - per - loy - sal - vir + creancesEnc;
+}
+function soldePersonnel(){
+  return state.salairesPerso.reduce((s,x)=>s+Number(x.montant||0),0) - state.depensesPerso.reduce((s,x)=>s+Number(x.montant||0),0);
+}
+function soldeEpargne(){
+  const dep = state.virements.filter(v=>(v.type||"depot")==="depot").reduce((s,v)=>s+Number(v.montant||0),0);
+  const ret = state.virements.filter(v=>v.type==="retrait").reduce((s,v)=>s+Number(v.montant||0),0);
+  return dep - ret;
+}
+function soldeInsuffisant(montant){ return Number(montant||0) > soldeCabinets(); }
+function msgSoldeInsuffisant(){ return "Solde insuffisant dans la caisse Cabinets (disponible : "+fmt(soldeCabinets())+")."; }
+function salairesProprioMois(mk){
+  return state.salairesPerso.filter(s=>monthKey(s.date)===mk).reduce((t,s)=>t+Number(s.montant||0),0);
+}
+function bilanMois(mk){
+  const rec = CABINETS.reduce((s,c)=>s+sumRecettes(c,mk),0)
+    + state.creances.filter(c=>c.payee && monthKey(c.datePayee)===mk).reduce((s,c)=>s+Number(c.montant||0),0);
+  const dep = state.depenses.filter(d=>monthKey(d.date)===mk).reduce((s,d)=>s+Number(d.montant||0),0)
+    + state.paiementsPersonnel.filter(p=>p.mois===mk).reduce((s,p)=>s+Number(p.montant||0),0)
+    + state.paiementsLoyer.filter(l=>l.mois===mk).reduce((s,l)=>s+Number(l.montant||0),0);
+  return { rec, dep, net: rec-dep };
+}
+function trendHtml(cur,prev,invert){
+  if(prev===0&&cur===0) return '<span class="trend flat">—</span>';
+  if(prev===0) return '<span class="trend '+(invert?"down":"up")+'">▲</span>';
+  const diff=cur-prev, up=diff>0;
+  const cls = diff===0?"flat":(invert?(up?"down":"up"):(up?"up":"down"));
+  return '<span class="trend '+cls+'">'+(diff===0?"—":(up?"▲":"▼"))+'</span>';
+}
+
+// ---------- rendu racine ----------
+function render(){
+  document.getElementById("topDate").textContent = new Date().toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});
+  const main = document.getElementById("main");
+  if(activeTab==="accueil") main.innerHTML = viewAccueil();
+  else if(activeTab==="recette") main.innerHTML = viewRecette();
+  else if(activeTab==="depense") main.innerHTML = viewDepense();
+  else if(activeTab==="charges") main.innerHTML = viewCharges();
+  else main.innerHTML = viewPlus();
+  renderNav(); bindEvents();
+}
+function renderNav(){
+  const tabs=[{k:"accueil",ic:"🏠",l:"Accueil"},{k:"recette",ic:"➕",l:"Recette"},{k:"depense",ic:"➖",l:"Dépense"},{k:"charges",ic:"🧑‍🤝‍🧑",l:"Charges"},{k:"plus",ic:"☰",l:"Plus"}];
+  document.getElementById("nav").innerHTML = tabs.map(t=>'<button data-tab="'+t.k+'" class="'+(activeTab===t.k?"active":"")+'"><span class="ic">'+t.ic+'</span>'+t.l+'</button>').join("");
+}
+
+// ---------- Accueil ----------
+function viewAccueil(){
+  const mk=thisMonthKey(), pmk=prevMonthKey(mk);
+  const b = bilanMois(mk);
+  const salMois = salairesProprioMois(mk);
+  const resteApresSalaire = b.net - salMois;
+  const dejaClôture = state.virements.some(v=>(v.type||"depot")==="depot" && v.objectif==="Clôture "+monthLabel(mk));
+
+  let html = '<div class="balance-grid">'
+    +'<div class="card"><h3>Caisse Cabinets</h3><div class="amount">'+fmt(soldeCabinets())+'</div></div>'
+    +'<div class="card"><h3>Caisse Personnel</h3><div class="amount">'+fmt(soldePersonnel())+'</div></div></div>'
+    +'<div class="card" style="text-align:center;margin-bottom:14px"><h3>Caisse Épargne / Objectifs</h3><div class="amount">'+fmt(soldeEpargne())+'</div></div>';
+
+  html += '<div class="card"><h3>Bilan de '+monthLabel(mk)+'</h3>'
+    +'<div class="cabinet-row"><span>Recettes</span><span class="amount-pos">+'+fmt(b.rec)+'</span></div>'
+    +'<div class="cabinet-row"><span>Charges et dépenses</span><span class="amount-neg">-'+fmt(b.dep)+'</span></div>'
+    +'<div class="cabinet-row"><span>Mon salaire déjà versé ce mois</span><span class="amount-neg">-'+fmt(salMois)+'</span></div>'
+    +'<div class="cabinet-row" style="border-bottom:none"><span style="font-weight:700">Reste à virer vers l\'épargne</span></div>'
+    +'<div class="net-amount" style="color:'+(resteApresSalaire>=0?"var(--pos)":"var(--neg)")+'">'+fmt(resteApresSalaire)+'</div>'
+    +(dejaClôture
+      ? '<p class="status">Mois déjà clôturé vers l\'épargne.</p>'
+      : (resteApresSalaire>0
+        ? '<button class="btn" id="btnCloturerMois" type="button" data-montant="'+resteApresSalaire+'" data-mois="'+monthLabel(mk)+'">Clôturer '+monthLabel(mk)+' : virer '+fmt(resteApresSalaire)+' vers l\'épargne</button>'
+        : '<p class="status" style="color:var(--ink-soft)">Rien à virer pour l\'instant ce mois-ci.</p>'))
+    +'<button class="btn secondary" id="btnAllerObjectifs" type="button">Gérer mes objectifs →</button></div>';
+
+  html += '<div class="section-title">Ce mois-ci comparé à '+monthLabel(pmk)+'</div><div class="card">';
+  CABINETS.forEach(c=>{
+    const rec=sumRecettes(c,mk), recP=sumRecettes(c,pmk), dep=sumDepensesCabinet(c,mk), depP=sumDepensesCabinet(c,pmk);
+    html += '<div class="cabinet-row"><div><div class="name">'+c+'</div>'
+      +'<div class="meta">Recettes '+trendHtml(rec,recP,false)+' · Dépenses '+trendHtml(dep,depP,true)+'</div></div>'
+      +'<div class="figures">'+fmt(rec)+'<br><span style="color:var(--neg)">-'+fmt(dep)+'</span></div></div>';
+  });
+  html += '</div>';
+
+  const alertes=[];
+  state.dettes.filter(d=>!d.paye).forEach(d=>{ const du=daysUntil(d.echeance); if(du!==null&&du<=15) alertes.push({txt:(du<0?"Échéance dépassée : ":"Échéance proche : ")+d.nom+" ("+fmt(d.montant)+")", bad:du<0}); });
+  if(alertes.length){ html += '<div class="section-title">Alertes</div><div class="card">'+alertes.map(a=>'<div class="cabinet-row"><span class="pill '+(a.bad?"neg":"warn")+'">'+a.txt+'</span></div>').join("")+'</div>'; }
+  const lastD = lastExportDaysAgo();
+  const totalCreances = state.creances.filter(c=>!c.payee).reduce((s,c)=>s+Number(c.montant||0),0);
+  if(totalCreances>0){
+    html += '<div class="card"><h3>Créances en attente</h3><div class="amount" style="font-size:20px;color:var(--warn)">'+fmt(totalCreances)+'</div>'
+      +'<button class="btn secondary" type="button" id="btnGoCreances">Voir le détail →</button></div>';
+  }
+  if(lastD===null || lastD>=7){
+    html += '<div class="card"><p class="status" style="color:var(--warn)">'
+      + (lastD===null ? "Vous n'avez encore jamais exporté votre historique." : "Cela fait "+lastD+" jours depuis votre dernier export.")
+      + '</p><button class="btn secondary" type="button" id="btnGoExport">Exporter maintenant</button></div>';
+  }
+  if(!saveOk) html += '<div class="card"><p class="status err">La sauvegarde locale a échoué (mémoire pleine).</p></div>';
+  return html;
+}
+
+// ---------- Recette ----------
+function viewRecette(){
+  const mk=thisMonthKey();
+  const recentes = state.recettes.filter(r=>monthKey(r.date)===mk).slice(-5).reverse();
+  return '<h2>Nouvelle recette</h2><div class="card">'
+    +'<label>Cabinet</label><div class="segmented" id="recCabinetPicker">'+CABINETS.map(c=>'<button type="button" data-c="'+c+'" class="'+(c===recetteCabinet?"active":"")+'">'+c+'</button>').join("")+'</div>'
+    +'<form id="formRecette">'
+    +'<label>Date</label><input type="date" name="date" value="'+todayStr()+'" required>'
+    +'<label>Nombre de consultations</label><input type="number" name="consultations" min="0" inputmode="numeric" placeholder="0">'
+    +'<label>Nombre d\'analyses</label><input type="number" name="analyses" min="0" inputmode="numeric" placeholder="0">'
+    +'<label>Montant encaissé (FCFA)</label><input type="number" name="encaisse" min="0" inputmode="numeric" required placeholder="0">'
+    +'<button class="btn" type="submit">Enregistrer la recette</button></form>'
+    +'<p class="status" style="color:var(--ink-soft)">Cette recette peut couvrir un jour, plusieurs jours ou une semaine. Pour les impayés, utilisez l\'onglet Créances (Plus → Créances).</p></div>'
+    +'<div class="section-title">Dernières recettes du mois</div><div class="card">'
+    +(recentes.length? recentes.map(r=>{
+        if(editTarget && editTarget.type==="recette" && editTarget.id===r.id) return editFormRecette(r);
+        return '<div class="list-row"><div><div class="desc">'+r.cabinet+'</div><div class="meta">'+r.date+' · '+(r.consultations||0)+' consult., '+(r.analyses||0)+' analyses</div></div>'
+          +'<div style="display:flex;align-items:center;gap:6px"><span class="amount-pos">+'+fmt(r.encaisse)+'</span>'
+          +'<button class="smallbtn" data-editrecette="'+r.id+'">✎</button><button class="smallbtn" data-delrecette="'+r.id+'">✕</button></div></div>';
+      }).join("")
+      : '<div class="empty">Aucune recette enregistrée ce mois-ci.</div>')+'</div>';
+}
+function editFormRecette(r){
+  return '<div class="card" style="margin:8px 0"><form id="formEditRecette" data-id="'+r.id+'">'
+    +'<label>Cabinet</label><select name="cabinet">'+CABINETS.map(c=>'<option value="'+c+'" '+(c===r.cabinet?"selected":"")+'>'+c+'</option>').join("")+'</select>'
+    +'<label>Date</label><input type="date" name="date" value="'+r.date+'" required>'
+    +'<label>Nombre de consultations</label><input type="number" name="consultations" min="0" value="'+(r.consultations||0)+'">'
+    +'<label>Nombre d\'analyses</label><input type="number" name="analyses" min="0" value="'+(r.analyses||0)+'">'
+    +'<label>Montant encaissé (FCFA)</label><input type="number" name="encaisse" min="0" value="'+r.encaisse+'" required>'
+    +'<button class="btn" type="submit">Enregistrer les modifications</button>'
+    +'<button class="btn secondary" type="button" id="btnAnnulerEdit">Annuler</button></form></div>';
+}
+
+// ---------- Dépense ----------
+function viewDepense(){
+  const mk=thisMonthKey();
+  const recentes = state.depenses.filter(d=>monthKey(d.date)===mk).slice(-5).reverse();
+  return '<h2>Nouvelle dépense</h2><div class="card">'
+    +'<label>Cabinet</label><div class="segmented" id="depCabinetPicker">'+CABINETS.map(c=>'<button type="button" data-c="'+c+'" class="'+(c===depenseCabinet?"active":"")+'">'+c+'</button>').join("")+'</div>'
+    +'<form id="formDepense">'
+    +'<label>Catégorie</label><select name="categorie">'+DEP_CATEGORIES.map(c=>'<option value="'+c+'">'+c+'</option>').join("")+'</select>'
+    +'<label>Montant (FCFA)</label><input type="number" name="montant" min="0" inputmode="numeric" required placeholder="0">'
+    +'<label>Date</label><input type="date" name="date" value="'+todayStr()+'" required>'
+    +'<label>Note (facultatif)</label><input type="text" name="note" placeholder="ex. Achat seringues">'
+    +'<button class="btn" type="submit">Enregistrer la dépense</button>'
+    +'<p class="status" id="depStatus"></p></form></div>'
+    +'<p class="status" style="color:var(--ink-soft)">Solde disponible en caisse Cabinets : '+fmt(soldeCabinets())+'. Le loyer et les salaires du personnel se gèrent dans l\'onglet Charges.</p>'
+    +'<div class="section-title">Dernières dépenses du mois</div><div class="card">'
+    +(recentes.length? recentes.map(d=>{
+        if(editTarget && editTarget.type==="depense" && editTarget.id===d.id) return editFormDepense(d);
+        return '<div class="list-row"><div><div class="desc">'+d.categorie+'</div><div class="meta">'+d.cabinet+' · '+d.date+(d.note?" · "+d.note:"")+'</div></div>'
+          +'<div style="display:flex;align-items:center;gap:6px"><span class="amount-neg">-'+fmt(d.montant)+'</span>'
+          +'<button class="smallbtn" data-editdepense="'+d.id+'">✎</button><button class="smallbtn" data-deldepense="'+d.id+'">✕</button></div></div>';
+      }).join("")
+      : '<div class="empty">Aucune dépense enregistrée ce mois-ci.</div>')+'</div>';
+}
+function editFormDepense(d){
+  return '<div class="card" style="margin:8px 0"><form id="formEditDepense" data-id="'+d.id+'">'
+    +'<label>Cabinet</label><select name="cabinet">'+CABINETS.map(c=>'<option value="'+c+'" '+(c===d.cabinet?"selected":"")+'>'+c+'</option>').join("")+'</select>'
+    +'<label>Catégorie</label><select name="categorie">'+DEP_CATEGORIES.map(c=>'<option value="'+c+'" '+(c===d.categorie?"selected":"")+'>'+c+'</option>').join("")+'</select>'
+    +'<label>Montant (FCFA)</label><input type="number" name="montant" min="0" value="'+d.montant+'" required>'
+    +'<label>Date</label><input type="date" name="date" value="'+d.date+'" required>'
+    +'<label>Note</label><input type="text" name="note" value="'+(d.note||"")+'">'
+    +'<button class="btn" type="submit">Enregistrer les modifications</button>'
+    +'<button class="btn secondary" type="button" id="btnAnnulerEdit">Annuler</button></form></div>';
+}
+
+// ---------- Charges (Personnel / Loyer) ----------
+function viewCharges(){
+  let html = '<div class="subtabs"><button data-chargestab="personnel" class="'+(chargesTab==="personnel"?"active":"")+'">Personnel</button>'
+    +'<button data-chargestab="loyer" class="'+(chargesTab==="loyer"?"active":"")+'">Loyer</button></div>';
+  html += chargesTab==="personnel" ? viewPersonnel() : viewLoyer();
+  return html;
+}
+function monthSelectHtml(){
+  const months=[]; const mk=thisMonthKey();
+  for(let i=0;i<6;i++){ months.push(i===0?mk:prevMonthKey(months[i-1])); }
+  return '<select id="situationMoisSel">'+months.map(m=>'<option value="'+m+'" '+(m===situationMois?"selected":"")+'>'+monthLabel(m)+'</option>').join("")+'</select>';
+}
+function viewPersonnel(){
+  let html = '<h2>Personnel</h2><div class="card"><form id="formPersonnel">'
+    +'<label>Nom</label><input type="text" name="nom" required placeholder="ex. Marie K.">'
+    +'<label>Cabinet</label><div class="segmented" id="persCabinetPicker">'+CAB2.map(c=>'<button type="button" data-c="'+c+'" class="'+(c===personnelCabinet?"active":"")+'">'+c+'</button>').join("")+'</div>'
+    +'<label>Salaire mensuel (FCFA)</label><input type="number" name="salaireMensuel" min="0" inputmode="numeric" required placeholder="0">'
+    +'<button class="btn" type="submit">Enregistrer l\'employé</button></form></div>';
+  html += '<div class="section-title">Situation des salaires — '+monthSelectHtml()+'</div><div class="card">';
+  if(!state.personnel.length) html += '<div class="empty">Aucun employé enregistré.</div>';
+  else state.personnel.forEach(p=>{
+    const paie = state.paiementsPersonnel.find(x=>x.personnelId===p.id&&x.mois===situationMois);
+    html += '<div class="list-row"><div><div class="desc">'+p.nom+' <span class="pill">'+p.cabinet+'</span></div>'
+      +'<div class="meta">'+fmt(p.salaireMensuel)+' / mois'+(paie?' · payé le '+paie.date:'')+'</div></div>'
+      +'<div style="display:flex;gap:6px;align-items:center">'
+      +'<button class="smallbtn" data-togglepers="'+p.id+'" style="'+(paie?'background:var(--pos);color:#fff;border-color:var(--pos)':'')+'">'+(paie?"Payé ✓":"Marquer payé")+'</button>'
+      +'<button class="smallbtn" data-delpers="'+p.id+'">✕</button></div></div>';
+  });
+  html += '</div>';
+  return html;
+}
+function viewLoyer(){
+  let html = '<h2>Loyer</h2><div class="card"><form id="formLoyer">'
+    +'<label>Cabinet</label><div class="segmented" id="loyCabinetPicker">'+CAB2.map(c=>'<button type="button" data-c="'+c+'" class="'+(c===loyerCabinet?"active":"")+'">'+c+'</button>').join("")+'</div>'
+    +'<label>Montant mensuel (FCFA)</label><input type="number" name="montantMensuel" min="0" inputmode="numeric" required placeholder="0">'
+    +'<button class="btn" type="submit">Enregistrer le loyer</button></form></div>';
+  html += '<div class="section-title">Situation des loyers — '+monthSelectHtml()+'</div><div class="card">';
+  if(!state.loyers.length) html += '<div class="empty">Aucun loyer enregistré.</div>';
+  else state.loyers.forEach(l=>{
+    const paie = state.paiementsLoyer.find(x=>x.cabinet===l.cabinet&&x.mois===situationMois);
+    html += '<div class="list-row"><div><div class="desc">'+l.cabinet+'</div>'
+      +'<div class="meta">'+fmt(l.montantMensuel)+' / mois'+(paie?' · payé le '+paie.date:'')+'</div></div>'
+      +'<div style="display:flex;gap:6px;align-items:center">'
+      +'<button class="smallbtn" data-toggleloy="'+l.cabinet+'" style="'+(paie?'background:var(--pos);color:#fff;border-color:var(--pos)':'')+'">'+(paie?"Payé ✓":"Marquer payé")+'</button>'
+      +'<button class="smallbtn" data-delloy="'+l.cabinet+'">✕</button></div></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+// ---------- Plus (Mon espace / Dettes / Historique) ----------
+function viewPlus(){
+  let html='<div class="subtabs"><button data-plustab="espace" class="'+(plusTab==="espace"?"active":"")+'">Mon espace</button>'
+    +'<button data-plustab="creances" class="'+(plusTab==="creances"?"active":"")+'">Créances</button>'
+    +'<button data-plustab="objectifs" class="'+(plusTab==="objectifs"?"active":"")+'">Objectifs</button>'
+    +'<button data-plustab="dettes" class="'+(plusTab==="dettes"?"active":"")+'">Dettes</button>'
+    +'<button data-plustab="historique" class="'+(plusTab==="historique"?"active":"")+'">Historique</button></div>';
+  if(plusTab==="espace") html+=viewEspace();
+  else if(plusTab==="creances") html+=viewCreances();
+  else if(plusTab==="objectifs") html+=viewObjectifs();
+  else if(plusTab==="dettes") html+=viewDettes();
+  else html+=viewHistorique();
+  return html;
+}
+function viewCreances(){
+  const enAttente = state.creances.filter(c=>!c.payee).sort((a,b)=>a.date.localeCompare(b.date));
+  const payees = state.creances.filter(c=>c.payee).sort((a,b)=>(b.datePayee||"").localeCompare(a.datePayee||"")).slice(0,10);
+  const total = enAttente.reduce((s,c)=>s+Number(c.montant||0),0);
+  let html = '<h2>Créances</h2><div class="card" style="text-align:center"><h3>Total en attente</h3><div class="amount" style="font-size:24px;color:var(--warn)">'+fmt(total)+'</div></div>';
+
+  html += '<div class="card"><h3>Ajouter plusieurs créances</h3>'
+    +'<label>Cabinet</label><div class="segmented" id="creCabinetPicker">'+CABINETS.map(c=>'<button type="button" data-c="'+c+'" class="'+(c===panierCabinet?"active":"")+'">'+c+'</button>').join("")+'</div>'
+    +'<form id="formPanier">'
+    +'<label>Date</label><input type="date" name="date" value="'+panierDate+'" required>';
+  for(let i=1;i<=panierRowCount;i++){
+    html += '<div class="cabinet-row" style="gap:8px"><input type="text" name="patient'+i+'" placeholder="Nom du patient '+i+'" style="flex:2"><input type="number" name="montant'+i+'" min="0" inputmode="numeric" placeholder="Montant" style="flex:1"></div>';
+  }
+  html += '<button class="btn secondary" type="button" id="btnAjouterLigne">+ Ajouter un patient</button>'
+    +'<button class="btn" type="submit">Enregistrer toutes les créances</button>'
+    +'<p class="status" id="panierStatus"></p></form></div>';
+
+  html += '<div class="section-title">Créances en attente ('+enAttente.length+')</div><div class="card">';
+  if(!enAttente.length) html += '<div class="empty">Aucune créance en attente.</div>';
+  else enAttente.forEach(c=>{
+    if(editTarget && editTarget.type==="creance" && editTarget.id===c.id){ html += editFormCreance(c); return; }
+    html += '<div class="list-row"><div><div class="desc">'+(c.patient||"Patient non renseigné")+' <span class="pill">'+c.cabinet+'</span></div>'
+      +'<div class="meta">'+c.date+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:6px"><span class="amount-neg">'+fmt(c.montant)+'</span>'
+      +'<button class="smallbtn" data-payercreance="'+c.id+'">Marquer payée</button>'
+      +'<button class="smallbtn" data-editcreance="'+c.id+'">✎</button><button class="smallbtn" data-delcreance="'+c.id+'">✕</button></div></div>';
+  });
+  html += '</div>';
+  if(payees.length){
+    html += '<div class="section-title">Dernières créances encaissées</div><div class="card">'
+      + payees.map(c=>'<div class="list-row"><div><div class="desc">'+(c.patient||"Patient non renseigné")+' <span class="pill">'+c.cabinet+'</span></div><div class="meta">encaissée le '+c.datePayee+'</div></div><span class="amount-pos">+'+fmt(c.montant)+'</span></div>').join("")
+      + '</div>';
+  }
+  return html;
+}
+function editFormCreance(c){
+  return '<div class="card" style="margin:8px 0"><form id="formEditCreance" data-id="'+c.id+'">'
+    +'<label>Cabinet</label><select name="cabinet">'+CABINETS.map(x=>'<option value="'+x+'" '+(x===c.cabinet?"selected":"")+'>'+x+'</option>').join("")+'</select>'
+    +'<label>Patient</label><input type="text" name="patient" value="'+(c.patient||"")+'">'
+    +'<label>Montant (FCFA)</label><input type="number" name="montant" min="0" value="'+c.montant+'" required>'
+    +'<label>Date</label><input type="date" name="date" value="'+c.date+'" required>'
+    +'<button class="btn" type="submit">Enregistrer les modifications</button>'
+    +'<button class="btn secondary" type="button" id="btnAnnulerEdit">Annuler</button></form></div>';
+}
+function viewObjectifs(){
+  const parObjectif = {};
+  state.virements.forEach(v=>{
+    const signe = (v.type||"depot")==="depot" ? 1 : -1;
+    parObjectif[v.objectif]=(parObjectif[v.objectif]||0)+signe*Number(v.montant||0);
+  });
+  const objs = Object.keys(parObjectif);
+  let html='<h2>Caisse Épargne / Objectifs</h2>'
+    +'<div class="card" style="text-align:center"><h3>Solde total de l\'épargne</h3><div class="amount" style="font-size:24px">'+fmt(soldeEpargne())+'</div></div>'
+    +'<div class="card"><h3>Déposer vers l\'épargne</h3><p class="status" style="color:var(--ink-soft)">Solde disponible en caisse Cabinets : '+fmt(soldeCabinets())+'</p><form id="formVirement">'
+    +'<label>Nom de l\'objectif</label><input type="text" name="objectif" required placeholder="ex. Fonds d\'urgence, Terrain">'
+    +'<label>Montant (FCFA)</label><input type="number" name="montant" min="0" inputmode="numeric" required placeholder="0">'
+    +'<button class="btn" type="submit">Virer depuis la caisse Cabinets</button>'
+    +'<p class="status" id="virStatus"></p></form></div>'
+    +'<div class="card"><h3>Sortir de l\'épargne</h3><form id="formRetrait">'
+    +'<label>Objectif concerné</label><input type="text" name="objectif" required placeholder="ex. Terrain" list="listeObjectifs">'
+    +'<datalist id="listeObjectifs">'+objs.map(o=>'<option value="'+o+'">').join("")+'</datalist>'
+    +'<label>Montant (FCFA)</label><input type="number" name="montant" min="0" inputmode="numeric" required placeholder="0">'
+    +'<button class="btn secondary" type="submit">Retirer de l\'épargne</button></form></div>';
+  html += '<div class="section-title">Solde par objectif</div><div class="card">'
+    + (objs.length? objs.map(o=>'<div class="cabinet-row"><span class="name">'+o+'</span><span class="'+(parObjectif[o]>=0?"amount-pos":"amount-neg")+'">'+fmt(parObjectif[o])+'</span></div>').join("")
+      : '<div class="empty">Aucun mouvement enregistré pour le moment.</div>')
+    + '</div>';
+  const recents = state.virements.slice().reverse().slice(0,10);
+  if(recents.length){
+    html += '<div class="section-title">Derniers mouvements</div><div class="card">'
+      + recents.map(v=>{
+          if(editTarget && editTarget.type==="virement" && editTarget.id===v.id) return editFormVirement(v);
+          const depot=(v.type||"depot")==="depot";
+          return '<div class="list-row"><div><div class="desc">'+v.objectif+' <span class="pill">'+(depot?"Dépôt":"Retrait")+'</span></div><div class="meta">'+v.date+'</div></div>'
+            +'<div style="display:flex;align-items:center;gap:6px"><span class="'+(depot?"amount-pos":"amount-neg")+'">'+(depot?"+":"-")+fmt(v.montant)+'</span>'
+            +'<button class="smallbtn" data-editvirement="'+v.id+'">✎</button><button class="smallbtn" data-delvirement="'+v.id+'">✕</button></div></div>'; }).join("")
+      + '</div>';
+  }
+  return html;
+}
+function editFormVirement(v){
+  const depot=(v.type||"depot")==="depot";
+  return '<div class="card" style="margin:8px 0"><form id="formEditVirement" data-id="'+v.id+'">'
+    +'<label>Type</label><select name="type"><option value="depot" '+(depot?"selected":"")+'>Dépôt</option><option value="retrait" '+(!depot?"selected":"")+'>Retrait</option></select>'
+    +'<label>Objectif</label><input type="text" name="objectif" value="'+v.objectif+'" required>'
+    +'<label>Montant (FCFA)</label><input type="number" name="montant" min="0" value="'+v.montant+'" required>'
+    +'<label>Date</label><input type="date" name="date" value="'+v.date+'" required>'
+    +'<button class="btn" type="submit">Enregistrer les modifications</button>'
+    +'<button class="btn secondary" type="button" id="btnAnnulerEdit">Annuler</button></form></div>';
+}
+function viewEspace(){
+  const solde = soldePersonnel();
+  const rows = [];
+  state.salairesPerso.forEach(s=>rows.push({id:s.id,type:"salaire",date:s.date,label:"Salaire versé",montant:s.montant,sens:1}));
+  state.depensesPerso.forEach(d=>rows.push({id:d.id,type:"depperso",date:d.date,label:d.categorie+(d.note?" — "+d.note:""),montant:d.montant,sens:-1}));
+  rows.sort((a,b)=>b.date.localeCompare(a.date));
+  return '<h2>Mon espace</h2><div class="card" style="text-align:center"><h3>Solde de ma caisse personnelle</h3><div class="amount" style="font-size:24px">'+fmt(solde)+'</div></div>'
+    +'<div class="card"><h3>Verser mon salaire</h3><p class="status" style="color:var(--ink-soft)">Solde disponible en caisse Cabinets : '+fmt(soldeCabinets())+'</p><form id="formSalaire">'
+    +'<label>Montant (FCFA)</label><input type="number" name="montant" min="0" inputmode="numeric" required value="'+lastSalaire+'" placeholder="0">'
+    +'<button class="btn" type="submit">Verser depuis la caisse Cabinets</button>'
+    +'<p class="status" id="salStatus"></p></form></div>'
+    +'<div class="card"><h3>Nouvelle dépense personnelle</h3><form id="formDepPerso">'
+    +'<label>Catégorie</label><select name="categorie">'+PERSO_CATEGORIES.map(c=>'<option value="'+c+'">'+c+'</option>').join("")+'</select>'
+    +'<label>Montant (FCFA)</label><input type="number" name="montant" min="0" inputmode="numeric" required placeholder="0">'
+    +'<label>Date</label><input type="date" name="date" value="'+todayStr()+'" required>'
+    +'<label>Note (facultatif)</label><input type="text" name="note" placeholder="ex. Marché">'
+    +'<button class="btn secondary" type="submit">Enregistrer la dépense</button></form></div>'
+    +'<div class="section-title">Mouvements récents</div><div class="card">'
+    +(rows.length? rows.slice(0,10).map(r=>{
+        if(editTarget && editTarget.type===r.type && editTarget.id===r.id){
+          return r.type==="salaire" ? editFormSalaire(state.salairesPerso.find(x=>x.id===r.id)) : editFormDepPerso(state.depensesPerso.find(x=>x.id===r.id));
+        }
+        return '<div class="list-row"><div><div class="desc">'+r.label+'</div><div class="meta">'+r.date+'</div></div>'
+          +'<div style="display:flex;align-items:center;gap:6px"><span class="'+(r.sens>0?"amount-pos":"amount-neg")+'">'+(r.sens>0?"+":"-")+fmt(r.montant)+'</span>'
+          +'<button class="smallbtn" data-editespace="'+r.type+':'+r.id+'">✎</button><button class="smallbtn" data-delespace="'+r.type+':'+r.id+'">✕</button></div></div>';
+      }).join("")
+      :'<div class="empty">Aucun mouvement enregistré.</div>')+'</div>';
+}
+function editFormSalaire(s){
+  return '<div class="card" style="margin:8px 0"><form id="formEditSalaire" data-id="'+s.id+'">'
+    +'<label>Montant (FCFA)</label><input type="number" name="montant" min="0" value="'+s.montant+'" required>'
+    +'<label>Date</label><input type="date" name="date" value="'+s.date+'" required>'
+    +'<button class="btn" type="submit">Enregistrer les modifications</button>'
+    +'<button class="btn secondary" type="button" id="btnAnnulerEdit">Annuler</button></form></div>';
+}
+function editFormDepPerso(d){
+  return '<div class="card" style="margin:8px 0"><form id="formEditDepPerso" data-id="'+d.id+'">'
+    +'<label>Catégorie</label><select name="categorie">'+PERSO_CATEGORIES.map(c=>'<option value="'+c+'" '+(c===d.categorie?"selected":"")+'>'+c+'</option>').join("")+'</select>'
+    +'<label>Montant (FCFA)</label><input type="number" name="montant" min="0" value="'+d.montant+'" required>'
+    +'<label>Date</label><input type="date" name="date" value="'+d.date+'" required>'
+    +'<label>Note</label><input type="text" name="note" value="'+(d.note||"")+'">'
+    +'<button class="btn" type="submit">Enregistrer les modifications</button>'
+    +'<button class="btn secondary" type="button" id="btnAnnulerEdit">Annuler</button></form></div>';
+}
+function viewDettes(){
+  const items = state.dettes.slice().sort((a,b)=>(a.echeance||"").localeCompare(b.echeance||""));
+  let html='<h2>Dettes et échéances</h2><div class="card"><form id="formDette">'
+    +'<label>Nom / créancier</label><input type="text" name="nom" required placeholder="ex. Solde terrain">'
+    +'<label>Montant (FCFA)</label><input type="number" name="montant" min="0" inputmode="numeric" required placeholder="0">'
+    +'<label>Date d\'échéance</label><input type="date" name="echeance" required>'
+    +'<button class="btn" type="submit">Ajouter la dette</button></form></div><div class="card">';
+  if(!items.length) html+='<div class="empty">Aucune dette enregistrée.</div>';
+  else items.forEach(d=>{
+    const du=daysUntil(d.echeance); let pill="";
+    if(!d.paye&&du!==null){ if(du<0) pill='<span class="pill neg">En retard</span>'; else if(du<=15) pill='<span class="pill warn">'+du+' j restants</span>'; }
+    html+='<div class="list-row"><div><div class="desc">'+d.nom+' '+(d.paye?'<span class="pill">Payé</span>':pill)+'</div><div class="meta">Échéance '+d.echeance+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:8px"><span class="'+(d.paye?'meta':'amount-neg')+'">'+fmt(d.montant)+'</span>'
+      +'<button class="smallbtn" data-toggledette="'+d.id+'">✓</button><button class="smallbtn" data-deldette="'+d.id+'">✕</button></div></div>';
+  });
+  html+='</div>'; return html;
+}
+function viewHistorique(){
+  const rows=[];
+  state.recettes.forEach(r=>rows.push({date:r.date,type:"Recette",cabinet:r.cabinet,desc:(r.consultations||0)+" consult.",montant:Number(r.encaisse||0),sens:1}));
+  state.depenses.forEach(d=>rows.push({date:d.date,type:"Dépense",cabinet:d.cabinet,desc:d.categorie+(d.note?" - "+d.note:""),montant:Number(d.montant||0),sens:-1}));
+  state.paiementsPersonnel.forEach(p=>{ const emp=state.personnel.find(x=>x.id===p.personnelId); rows.push({date:p.date,type:"Salaire employé",cabinet:emp?emp.cabinet:"",desc:emp?emp.nom:"",montant:Number(p.montant||0),sens:-1}); });
+  state.paiementsLoyer.forEach(l=>rows.push({date:l.date,type:"Loyer",cabinet:l.cabinet,desc:"Loyer du mois",montant:Number(l.montant||0),sens:-1}));
+  state.salairesPerso.forEach(s=>rows.push({date:s.date,type:"Mon salaire",cabinet:"Personnel",desc:"Versement",montant:Number(s.montant||0),sens:-1}));
+  state.virements.filter(v=>(v.type||"depot")==="depot").forEach(v=>rows.push({date:v.date,type:"Virement épargne",cabinet:v.objectif,desc:v.objectif,montant:Number(v.montant||0),sens:-1}));
+  state.creances.filter(c=>c.payee).forEach(c=>rows.push({date:c.datePayee,type:"Créance encaissée",cabinet:c.cabinet,desc:c.patient||"Patient non renseigné",montant:Number(c.montant||0),sens:1}));
+  const months = Array.from(new Set(rows.map(r=>monthKey(r.date)))).sort().reverse();
+  if(!months.includes(histFilterMonth)&&months.length) histFilterMonth=months[0];
+  const cabs=["Tous","Believe","Bien-être","Bon Pasteur","Personnel"];
+  let filtered = rows.filter(r=>monthKey(r.date)===histFilterMonth);
+  if(histFilterCabinet!=="Tous") filtered = filtered.filter(r=>r.cabinet===histFilterCabinet);
+  filtered.sort((a,b)=>b.date.localeCompare(a.date));
+  let html='<h2>Historique</h2><div class="filters">'
+    +'<select id="filtMois">'+(months.length?months:[histFilterMonth]).map(m=>'<option value="'+m+'" '+(m===histFilterMonth?"selected":"")+'>'+monthLabel(m)+'</option>').join("")+'</select>'
+    +'<select id="filtCabinet">'+cabs.map(c=>'<option value="'+c+'" '+(c===histFilterCabinet?"selected":"")+'>'+c+'</option>').join("")+'</select></div><div class="card">';
+  if(!filtered.length) html+='<div class="empty">Aucune transaction pour ce filtre.</div>';
+  else filtered.forEach(r=>html+='<div class="list-row"><div><div class="desc">'+r.type+' — '+r.cabinet+'</div><div class="meta">'+r.date+' · '+r.desc+'</div></div><span class="'+(r.sens>0?"amount-pos":"amount-neg")+'">'+(r.sens>0?"+":"-")+fmt(r.montant)+'</span></div>');
+  html+='</div><button class="btn secondary" id="btnExport">Exporter ce mois en CSV</button><p class="status" id="exportStatus"></p>';
+  const lastD = lastExportDaysAgo();
+  html += '<div class="card"><h3>Envoi par email</h3>'
+    +'<label>Adresse email destinataire</label><input type="email" id="emailDestinataire" value="'+(localStorage.getItem(EMAIL_KEY)||"")+'" placeholder="vous@exemple.com">'
+    +'<button class="btn secondary" type="button" id="btnExportEmail">Exporter puis préparer l\'email</button>'
+    +'<p class="status" id="emailStatus">'+(lastD===null?"Aucun envoi enregistré pour l'instant.":"Dernier export : il y a "+lastD+" jour(s).")+'</p>'
+    +'<p class="status" style="color:var(--ink-soft)">Le fichier se télécharge, puis votre application email s\'ouvre avec le destinataire déjà rempli : il vous reste à joindre le fichier et à envoyer.</p></div>';
+  return html;
+}
+
+// ---------- événements ----------
+function bindEvents(){
+  document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{ activeTab=b.dataset.tab; render(); });
+  const btnAllerObjectifs=document.getElementById("btnAllerObjectifs");
+  if(btnAllerObjectifs) btnAllerObjectifs.onclick=()=>{ activeTab="plus"; plusTab="objectifs"; render(); };
+  const btnGoCreances=document.getElementById("btnGoCreances");
+  if(btnGoCreances) btnGoCreances.onclick=()=>{ activeTab="plus"; plusTab="creances"; render(); };
+  const btnGoExport=document.getElementById("btnGoExport");
+  if(btnGoExport) btnGoExport.onclick=()=>{ activeTab="plus"; plusTab="historique"; render(); };
+
+  const recPicker=document.getElementById("recCabinetPicker");
+  if(recPicker) recPicker.querySelectorAll("button").forEach(b=>b.onclick=()=>{ recetteCabinet=b.dataset.c; render(); });
+  const formRecette=document.getElementById("formRecette");
+  if(formRecette) formRecette.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formRecette);
+    state.recettes.push({id:uid(),cabinet:recetteCabinet,date:fd.get("date"),consultations:Number(fd.get("consultations")||0),analyses:Number(fd.get("analyses")||0),encaisse:Number(fd.get("encaisse")||0)});
+    saveState(); render(); };
+
+  const depPicker=document.getElementById("depCabinetPicker");
+  if(depPicker) depPicker.querySelectorAll("button").forEach(b=>b.onclick=()=>{ depenseCabinet=b.dataset.c; render(); });
+  const formDepense=document.getElementById("formDepense");
+  if(formDepense) formDepense.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formDepense);
+    const montant=Number(fd.get("montant")||0);
+    if(soldeInsuffisant(montant)){ document.getElementById("depStatus").textContent=msgSoldeInsuffisant(); document.getElementById("depStatus").className="status err"; return; }
+    state.depenses.push({id:uid(),cabinet:depenseCabinet,categorie:fd.get("categorie"),montant,date:fd.get("date"),note:fd.get("note")||""});
+    saveState(); render(); };
+
+  const formVirement=document.getElementById("formVirement");
+  if(formVirement) formVirement.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formVirement);
+    const montant=Number(fd.get("montant")||0);
+    if(soldeInsuffisant(montant)){ document.getElementById("virStatus").textContent=msgSoldeInsuffisant(); document.getElementById("virStatus").className="status err"; return; }
+    state.virements.push({id:uid(),type:"depot",date:todayStr(),objectif:fd.get("objectif"),montant});
+    saveState(); render(); };
+  const formRetrait=document.getElementById("formRetrait");
+  if(formRetrait) formRetrait.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formRetrait);
+    state.virements.push({id:uid(),type:"retrait",date:todayStr(),objectif:fd.get("objectif"),montant:Number(fd.get("montant")||0)});
+    saveState(); render(); };
+  const btnCloturerMois=document.getElementById("btnCloturerMois");
+  if(btnCloturerMois) btnCloturerMois.onclick=()=>{
+    const montant=Number(btnCloturerMois.dataset.montant||0), mois=btnCloturerMois.dataset.mois;
+    if(soldeInsuffisant(montant)){ alert(msgSoldeInsuffisant()+" Le bilan du mois ne correspond pas au solde réel de la caisse (des dépenses d'un autre mois l'ont peut-être réduite depuis)."); return; }
+    state.virements.push({id:uid(),type:"depot",date:todayStr(),objectif:"Clôture "+mois,montant});
+    saveState(); render(); };
+
+  document.querySelectorAll("[data-chargestab]").forEach(b=>b.onclick=()=>{ chargesTab=b.dataset.chargestab; render(); });
+  const situSel=document.getElementById("situationMoisSel");
+  if(situSel) situSel.onchange=()=>{ situationMois=situSel.value; render(); };
+
+  const persPicker=document.getElementById("persCabinetPicker");
+  if(persPicker) persPicker.querySelectorAll("button").forEach(b=>b.onclick=()=>{ personnelCabinet=b.dataset.c; render(); });
+  const formPersonnel=document.getElementById("formPersonnel");
+  if(formPersonnel) formPersonnel.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formPersonnel);
+    state.personnel.push({id:uid(),nom:fd.get("nom"),cabinet:personnelCabinet,salaireMensuel:Number(fd.get("salaireMensuel")||0)});
+    saveState(); render(); };
+  document.querySelectorAll("[data-togglepers]").forEach(b=>b.onclick=()=>{
+    const pid=b.dataset.togglepers, existing=state.paiementsPersonnel.find(x=>x.personnelId===pid&&x.mois===situationMois);
+    if(existing){ state.paiementsPersonnel=state.paiementsPersonnel.filter(x=>x!==existing); saveState(); render(); return; }
+    const emp=state.personnel.find(x=>x.id===pid), montant=emp?emp.salaireMensuel:0;
+    if(soldeInsuffisant(montant)){ alert(msgSoldeInsuffisant()); return; }
+    state.paiementsPersonnel.push({id:uid(),personnelId:pid,mois:situationMois,montant,date:todayStr()});
+    saveState(); render(); });
+  document.querySelectorAll("[data-delpers]").forEach(b=>b.onclick=()=>{
+    state.personnel=state.personnel.filter(p=>p.id!==b.dataset.delpers);
+    state.paiementsPersonnel=state.paiementsPersonnel.filter(p=>p.personnelId!==b.dataset.delpers);
+    saveState(); render(); });
+
+  const loyPicker=document.getElementById("loyCabinetPicker");
+  if(loyPicker) loyPicker.querySelectorAll("button").forEach(b=>b.onclick=()=>{ loyerCabinet=b.dataset.c; render(); });
+  const formLoyer=document.getElementById("formLoyer");
+  if(formLoyer) formLoyer.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formLoyer);
+    const existing=state.loyers.find(l=>l.cabinet===loyerCabinet);
+    if(existing) existing.montantMensuel=Number(fd.get("montantMensuel")||0);
+    else state.loyers.push({cabinet:loyerCabinet,montantMensuel:Number(fd.get("montantMensuel")||0)});
+    saveState(); render(); };
+  document.querySelectorAll("[data-toggleloy]").forEach(b=>b.onclick=()=>{
+    const cab=b.dataset.toggleloy, existing=state.paiementsLoyer.find(x=>x.cabinet===cab&&x.mois===situationMois);
+    if(existing){ state.paiementsLoyer=state.paiementsLoyer.filter(x=>x!==existing); saveState(); render(); return; }
+    const l=state.loyers.find(x=>x.cabinet===cab), montant=l?l.montantMensuel:0;
+    if(soldeInsuffisant(montant)){ alert(msgSoldeInsuffisant()); return; }
+    state.paiementsLoyer.push({cabinet:cab,mois:situationMois,montant,date:todayStr()});
+    saveState(); render(); });
+  document.querySelectorAll("[data-delloy]").forEach(b=>b.onclick=()=>{
+    state.loyers=state.loyers.filter(l=>l.cabinet!==b.dataset.delloy);
+    state.paiementsLoyer=state.paiementsLoyer.filter(l=>l.cabinet!==b.dataset.delloy);
+    saveState(); render(); });
+
+  document.querySelectorAll("[data-plustab]").forEach(b=>b.onclick=()=>{ plusTab=b.dataset.plustab; render(); });
+  document.querySelectorAll("[data-payercreance]").forEach(b=>b.onclick=()=>{
+    const c = state.creances.find(x=>x.id===b.dataset.payercreance);
+    if(c){ c.payee=true; c.datePayee=todayStr(); saveState(); render(); }
+  });
+  const creCabinetPicker=document.getElementById("creCabinetPicker");
+  if(creCabinetPicker) creCabinetPicker.querySelectorAll("button").forEach(b=>b.onclick=()=>{ panierCabinet=b.dataset.c; render(); });
+  const btnAjouterLigne=document.getElementById("btnAjouterLigne");
+  if(btnAjouterLigne) btnAjouterLigne.onclick=()=>{
+    const fd=new FormData(document.getElementById("formPanier"));
+    panierDate = fd.get("date") || panierDate;
+    panierRowCount++; render();
+  };
+  const formPanier=document.getElementById("formPanier");
+  if(formPanier) formPanier.onsubmit=e=>{
+    e.preventDefault(); const fd=new FormData(formPanier);
+    const date = fd.get("date") || todayStr();
+    let ajoutes = 0;
+    for(let i=1;i<=panierRowCount;i++){
+      const montant = Number(fd.get("montant"+i)||0);
+      if(montant<=0) continue;
+      state.creances.push({id:uid(),cabinet:panierCabinet,date,patient:fd.get("patient"+i)||"",montant,payee:false,datePayee:null});
+      ajoutes++;
+    }
+    const statusEl=document.getElementById("panierStatus");
+    if(ajoutes===0){ statusEl.textContent="Aucune ligne valide (montant manquant)."; statusEl.className="status err"; return; }
+    panierRowCount = 3; panierDate = date;
+    saveState(); render();
+  };
+
+  const formSalaire=document.getElementById("formSalaire");
+  if(formSalaire) formSalaire.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formSalaire); const m=Number(fd.get("montant")||0);
+    if(soldeInsuffisant(m)){ document.getElementById("salStatus").textContent=msgSoldeInsuffisant(); document.getElementById("salStatus").className="status err"; return; }
+    lastSalaire=String(m); state.salairesPerso.push({id:uid(),date:todayStr(),montant:m}); saveState(); render(); };
+  const formDepPerso=document.getElementById("formDepPerso");
+  if(formDepPerso) formDepPerso.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formDepPerso);
+    state.depensesPerso.push({id:uid(),date:fd.get("date"),categorie:fd.get("categorie"),montant:Number(fd.get("montant")||0),note:fd.get("note")||""});
+    saveState(); render(); };
+
+  const formDette=document.getElementById("formDette");
+  if(formDette) formDette.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formDette);
+    state.dettes.push({id:uid(),nom:fd.get("nom"),montant:Number(fd.get("montant")||0),echeance:fd.get("echeance"),paye:false});
+    saveState(); render(); };
+  document.querySelectorAll("[data-toggledette]").forEach(b=>b.onclick=()=>{ const d=state.dettes.find(x=>x.id===b.dataset.toggledette); if(d){ d.paye=!d.paye; saveState(); render(); } });
+  document.querySelectorAll("[data-deldette]").forEach(b=>b.onclick=()=>{ state.dettes=state.dettes.filter(x=>x.id!==b.dataset.deldette); saveState(); render(); });
+
+  const fm=document.getElementById("filtMois"); if(fm) fm.onchange=()=>{ histFilterMonth=fm.value; render(); };
+  const fc=document.getElementById("filtCabinet"); if(fc) fc.onchange=()=>{ histFilterCabinet=fc.value; render(); };
+  const btnExport=document.getElementById("btnExport");
+  if(btnExport) btnExport.onclick=()=>{
+    const statusEl=document.getElementById("exportStatus");
+    try{
+      downloadCsvFile(buildCsv(histFilterMonth,histFilterCabinet), "historique_"+histFilterMonth+".csv");
+      localStorage.setItem(LASTEXPORT_KEY, todayStr());
+      statusEl.textContent="Fichier téléchargé dans votre dossier Téléchargements."; statusEl.className="status";
+    }catch(err){ statusEl.textContent="Échec de l'export."; statusEl.className="status err"; }
+  };
+  const btnExportEmail=document.getElementById("btnExportEmail");
+  if(btnExportEmail) btnExportEmail.onclick=()=>{
+    const emailInput=document.getElementById("emailDestinataire");
+    const email=(emailInput.value||"").trim();
+    const statusEl=document.getElementById("emailStatus");
+    localStorage.setItem(EMAIL_KEY, email);
+    try{
+      downloadCsvFile(buildCsv(histFilterMonth,histFilterCabinet), "historique_"+histFilterMonth+".csv");
+      localStorage.setItem(LASTEXPORT_KEY, todayStr());
+    }catch(err){ statusEl.textContent="Échec du téléchargement."; statusEl.className="status err"; return; }
+    const subject = encodeURIComponent("Historique "+monthLabel(histFilterMonth));
+    const body = encodeURIComponent("Bonjour,\n\nLe fichier historique_"+histFilterMonth+".csv vient d'être téléchargé.\nMerci de le joindre à ce message avant l'envoi.\n\n");
+    if(email) setTimeout(()=>{ window.location.href="mailto:"+email+"?subject="+subject+"&body="+body; }, 400);
+    statusEl.textContent="Fichier téléchargé. Joignez-le dans l'application email qui va s'ouvrir.";
+  };
+
+  // ---- Recette : édition / suppression ----
+  document.querySelectorAll("[data-editrecette]").forEach(b=>b.onclick=()=>{ editTarget={type:"recette",id:b.dataset.editrecette}; render(); });
+  document.querySelectorAll("[data-delrecette]").forEach(b=>b.onclick=()=>{ state.recettes=state.recettes.filter(x=>x.id!==b.dataset.delrecette); editTarget=null; saveState(); render(); });
+  const formEditRecette=document.getElementById("formEditRecette");
+  if(formEditRecette) formEditRecette.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formEditRecette);
+    const r=state.recettes.find(x=>x.id===formEditRecette.dataset.id);
+    if(r){ r.cabinet=fd.get("cabinet"); r.date=fd.get("date"); r.consultations=Number(fd.get("consultations")||0); r.analyses=Number(fd.get("analyses")||0); r.encaisse=Number(fd.get("encaisse")||0); }
+    editTarget=null; saveState(); render(); };
+
+  // ---- Dépense : édition / suppression ----
+  document.querySelectorAll("[data-editdepense]").forEach(b=>b.onclick=()=>{ editTarget={type:"depense",id:b.dataset.editdepense}; render(); });
+  document.querySelectorAll("[data-deldepense]").forEach(b=>b.onclick=()=>{ state.depenses=state.depenses.filter(x=>x.id!==b.dataset.deldepense); editTarget=null; saveState(); render(); });
+  const formEditDepense=document.getElementById("formEditDepense");
+  if(formEditDepense) formEditDepense.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formEditDepense);
+    const d=state.depenses.find(x=>x.id===formEditDepense.dataset.id);
+    if(d){ d.cabinet=fd.get("cabinet"); d.categorie=fd.get("categorie"); d.montant=Number(fd.get("montant")||0); d.date=fd.get("date"); d.note=fd.get("note")||""; }
+    editTarget=null; saveState(); render(); };
+
+  // ---- Créance : édition / suppression ----
+  document.querySelectorAll("[data-editcreance]").forEach(b=>b.onclick=()=>{ editTarget={type:"creance",id:b.dataset.editcreance}; render(); });
+  document.querySelectorAll("[data-delcreance]").forEach(b=>b.onclick=()=>{ state.creances=state.creances.filter(x=>x.id!==b.dataset.delcreance); editTarget=null; saveState(); render(); });
+  const formEditCreance=document.getElementById("formEditCreance");
+  if(formEditCreance) formEditCreance.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formEditCreance);
+    const c=state.creances.find(x=>x.id===formEditCreance.dataset.id);
+    if(c){ c.cabinet=fd.get("cabinet"); c.patient=fd.get("patient")||""; c.montant=Number(fd.get("montant")||0); c.date=fd.get("date"); }
+    editTarget=null; saveState(); render(); };
+
+  // ---- Virement épargne : édition / suppression ----
+  document.querySelectorAll("[data-editvirement]").forEach(b=>b.onclick=()=>{ editTarget={type:"virement",id:b.dataset.editvirement}; render(); });
+  document.querySelectorAll("[data-delvirement]").forEach(b=>b.onclick=()=>{ state.virements=state.virements.filter(x=>x.id!==b.dataset.delvirement); editTarget=null; saveState(); render(); });
+  const formEditVirement=document.getElementById("formEditVirement");
+  if(formEditVirement) formEditVirement.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formEditVirement);
+    const v=state.virements.find(x=>x.id===formEditVirement.dataset.id);
+    if(v){ v.type=fd.get("type"); v.objectif=fd.get("objectif"); v.montant=Number(fd.get("montant")||0); v.date=fd.get("date"); }
+    editTarget=null; saveState(); render(); };
+
+  // ---- Mon espace (salaire / dépense perso) : édition / suppression ----
+  document.querySelectorAll("[data-editespace]").forEach(b=>b.onclick=()=>{ const [t,id]=b.dataset.editespace.split(":"); editTarget={type:t,id}; render(); });
+  document.querySelectorAll("[data-delespace]").forEach(b=>b.onclick=()=>{ const [t,id]=b.dataset.delespace.split(":");
+    if(t==="salaire") state.salairesPerso=state.salairesPerso.filter(x=>x.id!==id);
+    else state.depensesPerso=state.depensesPerso.filter(x=>x.id!==id);
+    editTarget=null; saveState(); render(); });
+  const formEditSalaire=document.getElementById("formEditSalaire");
+  if(formEditSalaire) formEditSalaire.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formEditSalaire);
+    const s=state.salairesPerso.find(x=>x.id===formEditSalaire.dataset.id);
+    if(s){ s.montant=Number(fd.get("montant")||0); s.date=fd.get("date"); }
+    editTarget=null; saveState(); render(); };
+  const formEditDepPerso=document.getElementById("formEditDepPerso");
+  if(formEditDepPerso) formEditDepPerso.onsubmit=e=>{ e.preventDefault(); const fd=new FormData(formEditDepPerso);
+    const d=state.depensesPerso.find(x=>x.id===formEditDepPerso.dataset.id);
+    if(d){ d.categorie=fd.get("categorie"); d.montant=Number(fd.get("montant")||0); d.date=fd.get("date"); d.note=fd.get("note")||""; }
+    editTarget=null; saveState(); render(); };
+
+  const btnAnnulerEdit=document.getElementById("btnAnnulerEdit");
+  if(btnAnnulerEdit) btnAnnulerEdit.onclick=()=>{ editTarget=null; render(); };
+}
+
+// ---------- verrouillage par code d'accès ----------
+const PW_KEY = "cab_finances_pw_hash";
+const RECOVERY_KEY = "cab_finances_recovery_hash";
+function simpleHash(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return String(h); }
+function hasPassword(){ return !!localStorage.getItem(PW_KEY); }
+function isUnlocked(){ return sessionStorage.getItem("cab_unlocked")==="1"; }
+function setAppVisible(visible){
+  document.getElementById("top").style.display = visible ? "" : "none";
+  document.getElementById("main").style.display = visible ? "" : "none";
+  document.getElementById("nav").style.display = visible ? "" : "none";
+  document.getElementById("lock").style.display = visible ? "none" : "flex";
+}
+function checkUnlock(){
+  if(isUnlocked()){ setAppVisible(true); render(); }
+  else{ setAppVisible(false); renderLock(hasPassword() ? "verify" : "create"); }
+}
+function renderLock(mode, errMsg, changeMode){
+  const lock = document.getElementById("lock");
+  if(changeMode){
+    lock.innerHTML = '<div class="box"><div class="icon">🔒</div><h2>Changer le code</h2>'
+      +'<p class="hint">Entrez votre code actuel puis le nouveau.</p>'
+      +'<form id="formChangePw">'
+      +'<label>Code actuel</label><input type="password" name="old" inputmode="numeric" required autofocus>'
+      +'<label>Nouveau code</label><input type="password" name="new1" inputmode="numeric" required>'
+      +'<label>Confirmer le nouveau code</label><input type="password" name="new2" inputmode="numeric" required>'
+      +'<button class="btn" type="submit">Enregistrer le nouveau code</button>'
+      +'<button class="btn secondary" type="button" id="btnCancelChange">Annuler</button>'
+      +(errMsg?'<p class="status err">'+errMsg+'</p>':'<p class="status"></p>')
+      +'</form>'
+      +'<button class="btn secondary" type="button" id="btnGoWipe" style="margin-top:24px;border-color:var(--neg);color:var(--neg)">Effacer toutes les données enregistrées</button>'
+      +'</div>';
+    document.getElementById("formChangePw").onsubmit=e=>{
+      e.preventDefault(); const fd=new FormData(e.target);
+      if(simpleHash(fd.get("old"))!==localStorage.getItem(PW_KEY)){ renderLock(null,"Code actuel incorrect.",true); return; }
+      if(fd.get("new1")!==fd.get("new2")){ renderLock(null,"Les deux nouveaux codes ne correspondent pas.",true); return; }
+      if(!fd.get("new1")){ renderLock(null,"Le nouveau code ne peut pas être vide.",true); return; }
+      localStorage.setItem(PW_KEY, simpleHash(fd.get("new1")));
+      checkUnlock();
+    };
+    document.getElementById("btnCancelChange").onclick=()=>checkUnlock();
+    document.getElementById("btnGoWipe").onclick=()=>renderLock("wipe1");
+    return;
+  }
+  if(mode==="wipe1" || mode==="wipe2"){
+    const step = mode==="wipe1" ? 1 : 2;
+    lock.innerHTML = '<div class="box"><div class="icon">⚠️</div><h2>Effacer toutes les données</h2>'
+      +'<p class="hint">'+(step===1
+        ? "Cette action efface définitivement toutes les recettes, dépenses, le personnel, le loyer, les dettes et l'épargne. Confirmez une première fois (code ou phrase secrète)."
+        : "Confirmez une seconde fois pour effacer définitivement (code ou phrase secrète).")
+      +'</p>'
+      +'<form id="formWipe'+step+'">'
+      +'<label>Code ou phrase secrète</label><input type="text" name="val" required autofocus>'
+      +'<button class="btn" type="submit" style="background:var(--neg)">'+(step===1?"Continuer":"Effacer définitivement")+'</button>'
+      +'<button class="btn secondary" type="button" id="btnCancelWipe">Annuler</button>'
+      +(errMsg?'<p class="status err">'+errMsg+'</p>':'<p class="status"></p>')
+      +'</form></div>';
+    document.getElementById("formWipe"+step).onsubmit=e=>{
+      e.preventDefault(); const fd=new FormData(e.target);
+      const h = simpleHash(fd.get("val"));
+      if(h!==localStorage.getItem(PW_KEY) && h!==localStorage.getItem(RECOVERY_KEY)){
+        renderLock(step===1?"wipe1":"wipe2","Code ou phrase secrète incorrect."); return;
+      }
+      if(step===1){ renderLock("wipe2"); return; }
+      localStorage.removeItem(STORE_KEY); state = defaultState(); saveState();
+      checkUnlock();
+    };
+    document.getElementById("btnCancelWipe").onclick=()=>renderLock(null,null,true);
+    return;
+  }
+  if(mode==="create"){
+    lock.innerHTML = '<div class="box"><div class="icon">🔒</div><h2>Créer un code d\'accès</h2>'
+      +'<p class="hint">Le code vous sera redemandé à chaque ouverture. La phrase secrète sert uniquement si vous oubliez le code — notez-la en lieu sûr, hors du téléphone.</p>'
+      +'<form id="formCreatePw">'
+      +'<label>Nouveau code</label><input type="password" name="pw1" inputmode="numeric" required autofocus>'
+      +'<label>Confirmer le code</label><input type="password" name="pw2" inputmode="numeric" required>'
+      +'<label>Phrase secrète de récupération</label><input type="text" name="rec1" required placeholder="une phrase que vous seul connaissez">'
+      +'<label>Confirmer la phrase secrète</label><input type="text" name="rec2" required>'
+      +'<button class="btn" type="submit">Créer le code et continuer</button>'
+      +(errMsg?'<p class="status err">'+errMsg+'</p>':'<p class="status"></p>')
+      +'</form></div>';
+    document.getElementById("formCreatePw").onsubmit=e=>{
+      e.preventDefault(); const fd=new FormData(e.target);
+      if(fd.get("pw1")!==fd.get("pw2")){ renderLock("create","Les deux codes ne correspondent pas."); return; }
+      if(!fd.get("pw1")){ renderLock("create","Le code ne peut pas être vide."); return; }
+      if(fd.get("rec1")!==fd.get("rec2")){ renderLock("create","Les deux phrases secrètes ne correspondent pas."); return; }
+      if(!fd.get("rec1")){ renderLock("create","La phrase secrète ne peut pas être vide."); return; }
+      localStorage.setItem(PW_KEY, simpleHash(fd.get("pw1")));
+      localStorage.setItem(RECOVERY_KEY, simpleHash(fd.get("rec1")));
+      sessionStorage.setItem("cab_unlocked","1");
+      checkUnlock();
+    };
+  } else if(mode==="recover"){
+    if(!localStorage.getItem(RECOVERY_KEY)){
+      lock.innerHTML = '<div class="box"><div class="icon">🔒</div><h2>Récupération impossible ici</h2>'
+        +'<p class="hint">Aucune phrase secrète n\'a été définie pour ce code. La seule option est d\'effacer les données de ce site dans les réglages de Chrome : menu ⋮ → Paramètres → Paramètres des sites → Toutes les données des sites → rechercher ce site → Supprimer. Cela effacera aussi toutes vos données enregistrées.</p>'
+        +'<button class="btn secondary" type="button" id="btnBackVerify">Retour</button></div>';
+      document.getElementById("btnBackVerify").onclick=()=>renderLock("verify");
+      return;
+    }
+    lock.innerHTML = '<div class="box"><div class="icon">🔑</div><h2>Récupérer l\'accès</h2>'
+      +'<p class="hint">Entrez votre phrase secrète pour définir un nouveau code. Vos données seront conservées.</p>'
+      +'<form id="formRecover">'
+      +'<label>Phrase secrète</label><input type="text" name="rec" required autofocus>'
+      +'<button class="btn" type="submit">Vérifier</button>'
+      +'<button class="btn secondary" type="button" id="btnBackVerify2">Retour</button>'
+      +(errMsg?'<p class="status err">'+errMsg+'</p>':'<p class="status"></p>')
+      +'</form></div>';
+    document.getElementById("formRecover").onsubmit=e=>{
+      e.preventDefault(); const fd=new FormData(e.target);
+      if(simpleHash(fd.get("rec"))===localStorage.getItem(RECOVERY_KEY)) renderLock("recover-newpw");
+      else renderLock("recover","Phrase secrète incorrecte.");
+    };
+    document.getElementById("btnBackVerify2").onclick=()=>renderLock("verify");
+  } else if(mode==="recover-newpw"){
+    lock.innerHTML = '<div class="box"><div class="icon">🔑</div><h2>Nouveau code</h2>'
+      +'<p class="hint">Phrase vérifiée. Choisissez un nouveau code.</p>'
+      +'<form id="formNewPwAfterRecover">'
+      +'<label>Nouveau code</label><input type="password" name="pw1" inputmode="numeric" required autofocus>'
+      +'<label>Confirmer le nouveau code</label><input type="password" name="pw2" inputmode="numeric" required>'
+      +'<button class="btn" type="submit">Enregistrer et ouvrir l\'application</button>'
+      +(errMsg?'<p class="status err">'+errMsg+'</p>':'<p class="status"></p>')
+      +'</form></div>';
+    document.getElementById("formNewPwAfterRecover").onsubmit=e=>{
+      e.preventDefault(); const fd=new FormData(e.target);
+      if(fd.get("pw1")!==fd.get("pw2")){ renderLock("recover-newpw","Les deux codes ne correspondent pas."); return; }
+      if(!fd.get("pw1")){ renderLock("recover-newpw","Le code ne peut pas être vide."); return; }
+      localStorage.setItem(PW_KEY, simpleHash(fd.get("pw1")));
+      sessionStorage.setItem("cab_unlocked","1");
+      checkUnlock();
+    };
+  } else {
+    lock.innerHTML = '<div class="box"><div class="icon">🔒</div><h2>Code d\'accès</h2>'
+      +'<p class="hint">Entrez votre code pour ouvrir l\'application.</p>'
+      +'<form id="formVerifyPw">'
+      +'<label>Code</label><input type="password" name="pw" inputmode="numeric" required autofocus>'
+      +'<button class="btn" type="submit">Déverrouiller</button>'
+      +(errMsg?'<p class="status err">'+errMsg+'</p>':'<p class="status"></p>')
+      +'</form>'
+      +'<p class="status" style="margin-top:18px">Code oublié ? <a href="#" id="linkRecover">Récupérer avec ma phrase secrète</a></p>'
+      +'</div>';
+    document.getElementById("formVerifyPw").onsubmit=e=>{
+      e.preventDefault(); const fd=new FormData(e.target);
+      if(simpleHash(fd.get("pw"))===localStorage.getItem(PW_KEY)){ sessionStorage.setItem("cab_unlocked","1"); checkUnlock(); }
+      else{ renderLock("verify","Code incorrect."); }
+    };
+    document.getElementById("linkRecover").onclick=(e)=>{ e.preventDefault(); renderLock("recover"); };
+  }
+}
+document.getElementById("btnLockMenu").onclick=()=>{
+  if(!isUnlocked()){ return; }
+  setAppVisible(false); renderLock(null, null, true);
+};
+
+checkUnlock();
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{ navigator.serviceWorker.register("service-worker.js").catch(()=>{}); });
+}
+</script>
+</body>
+</html>
