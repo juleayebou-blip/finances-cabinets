@@ -1,4 +1,4 @@
-const CACHE_NAME = "finances-cabinets-v1";
+const CACHE_NAME = "finances-cabinets-v2";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -18,6 +18,13 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  if (event.request.mode === "navigate") {
+    // Ouverture de l'app (icône, onglet) : réseau si possible, sinon la page mise en cache
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match("./index.html"))
+    );
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
